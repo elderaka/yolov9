@@ -95,11 +95,39 @@ def run(
         # Inference
         with dt[1]:
             visualize = increment_path(save_dir / Path(path).stem, mkdir=True) if visualize else False
-            pred = model(im, augment=augment, visualize=visualize)
+            model_output = model(im, augment=augment, visualize=visualize)
+
+            # Check if model_output is a list/tuple and take the first element if so
+            # This is a common pattern if the model returns multiple outputs (e.g., main predictions + auxiliary)
+            if isinstance(model_output, (list, tuple)):
+                predictions_tensor = model_output[0]
+            else:
+                predictions_tensor = model_output
+
+            # Debug print (optional, but helpful)
+            # print(f"Type of predictions_tensor: {type(predictions_tensor)}")
+            # if hasattr(predictions_tensor, 'shape'):
+            #     print(f"Shape of predictions_tensor: {predictions_tensor.shape}")
+
+            pred = non_max_suppression(predictions_tensor, conf_thres, iou_thres, classes, agnostic_nms, max_det=max_det)
 
         # NMS
         with dt[2]:
-            pred = non_max_suppression(pred, conf_thres, iou_thres, classes, agnostic_nms, max_det=max_det)
+            model_output = model(im, augment=augment, visualize=visualize)
+
+            # Check if model_output is a list/tuple and take the first element if so
+            # This is a common pattern if the model returns multiple outputs (e.g., main predictions + auxiliary)
+            if isinstance(model_output, (list, tuple)):
+                predictions_tensor = model_output[0]
+            else:
+                predictions_tensor = model_output
+
+            # Debug print (optional, but helpful)
+            # print(f"Type of predictions_tensor: {type(predictions_tensor)}")
+            # if hasattr(predictions_tensor, 'shape'):
+            #     print(f"Shape of predictions_tensor: {predictions_tensor.shape}")
+
+            pred = non_max_suppression(predictions_tensor, conf_thres, iou_thres, classes, agnostic_nms, max_det=max_det)
 
         # Second-stage classifier (optional)
         # pred = utils.general.apply_classifier(pred, classifier_model, im, im0s)
